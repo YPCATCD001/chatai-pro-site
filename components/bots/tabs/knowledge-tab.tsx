@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2, Upload, Link as LinkIcon, HelpCircle } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 interface Bot { id: string; }
 interface KBItem {
@@ -31,9 +32,15 @@ export function KnowledgeTab({ bot }: { bot: Bot }) {
   async function load() {
     setLoading(true);
     try {
-      const res = await fetch(`/api/bots/${bot.id}/knowledge`);
-      const data = await res.json();
-      if (Array.isArray(data)) setItems(data);
+      const { data, error } = await (createClient() as any)
+        .from("knowledge_base")
+        .select("*")
+        .eq("bot_id", bot.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      if (Array.isArray(data)) setItems(data as KBItem[]);
+    } catch (e: any) {
+      alert(e.message || "Failed to load knowledge base");
     } finally {
       setLoading(false);
     }
@@ -44,13 +51,32 @@ export function KnowledgeTab({ bot }: { bot: Bot }) {
     if (!file) return;
     setFileUploading(file.name);
     try {
-      const form = new FormData();
-      form.append("file", file);
-      const res = await fetch(`/api/bots/${bot.id}/knowledge/upload`, {
-        method: "POST",
-        body: form,
-      });
-      if (!res.ok) throw new Error((await res.json()).error || "Failed");
+      const { data: { user } } = await (createClient() as any).auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const filePath = `${user.id}/${bot.id}/${Date.now()}_${file.name}`;
+      const { error: uploadError } = await (createClient() as any)
+        .storage
+        .from("knowledge-base")
+        .upload(filePath, file);
+      if (uploadError) throw uploadError;
+
+      const { data: publicData } = createClient()
+        .storage
+        .from("knowledge-base")
+        .getPublicUrl(filePath);
+
+      const { error: insertError } = await (createClient() as any)
+        .from("knowledge_base")
+        .insert({
+          bot_id: bot.id,
+          type: "document",
+          title: file.name,
+          file_url: publicData.publicUrl,
+          status: "processing",
+        } as any);
+      if (insertError) throw insertError;
+
       load();
     } catch (err: any) {
       alert(err.message || "Upload failed");
@@ -64,12 +90,16 @@ export function KnowledgeTab({ bot }: { bot: Bot }) {
     e.preventDefault();
     if (!url.trim()) return;
     try {
-      const res = await fetch(`/api/bots/${bot.id}/knowledge/url`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: url.trim() }),
-      });
-      if (!res.ok) throw new Error((await res.json()).error || "Failed");
+      const { error } = await (createClient() as any)
+        .from("knowledge_base")
+        .insert({
+          bot_id: bot.id,
+          type: "url",
+          title: url.trim(),
+          source_url: url.trim(),
+          status: "processing",
+        } as any);
+      if (error) throw error;
       setUrl("");
       load();
     } catch (e: any) { alert(e.message || "Failed"); }
@@ -79,12 +109,16 @@ export function KnowledgeTab({ bot }: { bot: Bot }) {
     e.preventDefault();
     if (!faq.trim() || !faqA.trim()) return;
     try {
-      const res = await fetch(`/api/bots/${bot.id}/knowledge/faq`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: [{ question: faq, answer: faqA }] }),
-      });
-      if (!res.ok) throw new Error((await res.json()).error || "Failed");
+      const { error } = await (createClient() as any)
+        .from("knowledge_base")
+        .insert({
+          bot_id: bot.id,
+          type: "faq",
+          title: faq.trim(),
+          content: faqA.trim(),
+          status: "ready",
+        } as any);
+      if (error) throw error;
       setFaq("");
       setFaqA("");
       load();
@@ -93,8 +127,16 @@ export function KnowledgeTab({ bot }: { bot: Bot }) {
 
   async function remove(id: string) {
     if (!confirm("Delete this item?")) return;
-    await fetch(`/api/knowledge/${id}`, { method: "DELETE" });
-    load();
+    try {
+      const { error } = await (createClient() as any)
+        .from("knowledge_base")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+      load();
+    } catch (e: any) {
+      alert(e.message || "Failed to delete");
+    }
   }
 
   return (

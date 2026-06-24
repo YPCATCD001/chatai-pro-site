@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { AppShell } from "@/components/layout/app-shell";
 import { Plus, Trash2, Settings } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 interface Bot {
   id: string;
@@ -35,12 +36,26 @@ export default function BotsPage() {
   async function loadBots() {
     setLoading(true);
     try {
-      const res = await fetch("/api/bots");
-      const data = await res.json();
-      if (Array.isArray(data)) setBots(data);
+      const { data, error } = await (createClient() as any)
+        .from("bots")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      if (Array.isArray(data)) setBots(data as Bot[]);
+    } catch (e: any) {
+      setError(e.message || "Failed to load bots");
     } finally {
       setLoading(false);
     }
+  }
+
+  function generateApiKey() {
+    const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let key = "bot_";
+    for (let i = 0; i < 32; i++) {
+      key += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return key;
   }
 
   async function createBot(e: React.FormEvent) {
@@ -48,17 +63,22 @@ export default function BotsPage() {
     setSaving(true);
     setError(null);
     try {
-      const res = await fetch("/api/bots", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const { data: { user } } = await (createClient() as any).auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+      
+      const apiKey = generateApiKey();
+      const { error } = await (createClient() as any)
+        .from("bots")
+        .insert({
           name: name.trim() || "My AI Bot",
           welcome_message: welcome.trim() || "Hi there! How can I help you today?",
           primary_color: primaryColor,
-          position,
-        }),
-      });
-      if (!res.ok) throw new Error((await res.json()).error || "Failed");
+          position: position as "bottom-right" | "bottom-left",
+          user_id: user.id,
+          api_key: apiKey,
+          status: "active",
+        } as any);
+      if (error) throw error;
       setShowCreate(false);
       setName("");
       setWelcome("");
@@ -72,8 +92,13 @@ export default function BotsPage() {
 
   async function deleteBot(id: string) {
     if (!confirm("Delete this bot? All knowledge and conversations will be removed.")) return;
-    await fetch("/api/bots/" + id, { method: "DELETE" });
-    loadBots();
+    try {
+      const { error } = await (createClient() as any).from("bots").delete().eq("id", id);
+      if (error) throw error;
+      loadBots();
+    } catch (e: any) {
+      setError(e.message || "Failed to delete bot");
+    }
   }
 
   return (

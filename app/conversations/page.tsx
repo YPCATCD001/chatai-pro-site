@@ -5,6 +5,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { MessageSquare } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 interface Conversation {
   id: string;
@@ -24,12 +25,20 @@ export default function ConversationsPage() {
 
   useEffect(() => { load(); }, []);
 
+  const [error, setError] = useState<string | null>(null);
+
   async function load() {
     setLoading(true);
+    setError(null);
     try {
-      const res = await fetch("/api/conversations");
-      const data = await res.json();
-      if (Array.isArray(data)) setItems(data);
+      const { data, error } = await (createClient() as any)
+        .from("conversations")
+        .select("*, bots(id, name)")
+        .order("updated_at", { ascending: false });
+      if (error) throw error;
+      if (Array.isArray(data)) setItems(data as Conversation[]);
+    } catch (e: any) {
+      setError(e.message || "Failed to load conversations");
     } finally { setLoading(false); }
   }
 

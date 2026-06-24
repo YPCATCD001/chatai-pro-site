@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 interface Message {
   id: string;
@@ -19,9 +20,13 @@ export function ConversationDetailClient({ id }: { id: string }) {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`/api/conversations/${id}/messages`);
-        const data = await res.json();
-        if (Array.isArray(data) && !cancelled) setMessages(data);
+        const { data, error } = await (createClient() as any)
+          .from("messages")
+          .select("*")
+          .eq("conversation_id", id)
+          .order("created_at", { ascending: true });
+        if (error) throw error;
+        if (Array.isArray(data) && !cancelled) setMessages(data as Message[]);
       } catch {
         // silent
       } finally {

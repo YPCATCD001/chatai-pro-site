@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { createClient } from "@/lib/supabase/client";
 
 interface Bot {
   id: string;
@@ -34,20 +35,21 @@ export function SettingsTab({
     setSaving(true);
     setMsg(null);
     try {
-      const res = await fetch(`/api/bots/${bot.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const { data, error } = await (createClient() as any)
+        .from("bots")
+        .update({
           name,
           welcome_message: welcome,
           primary_color: primaryColor,
           position,
           status,
-        }),
-      });
-      if (!res.ok) throw new Error((await res.json()).error || "Failed");
-      const updated = await res.json();
-      onSaved(updated);
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", bot.id)
+        .select()
+        .single();
+      if (error) throw error;
+      onSaved(data as Bot);
       setMsg("Saved!");
     } catch (e: any) {
       setMsg(e.message || "Error");

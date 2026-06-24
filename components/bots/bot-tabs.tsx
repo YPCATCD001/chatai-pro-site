@@ -5,6 +5,7 @@ import { SettingsTab } from "@/components/bots/tabs/settings-tab";
 import { KnowledgeTab } from "@/components/bots/tabs/knowledge-tab";
 import { EmbedTab } from "@/components/bots/tabs/embed-tab";
 import { PreviewTab } from "@/components/bots/tabs/preview-tab";
+import { createClient } from "@/lib/supabase/client";
 
 interface Bot {
   id: string;
@@ -34,9 +35,14 @@ export function BotTabs({ botId }: { botId: string }) {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch(`/api/bots/${botId}`);
-        if (!res.ok) throw new Error("Bot not found");
-        setBot(await res.json());
+        const { data, error } = await (createClient() as any)
+          .from("bots")
+          .select("*")
+          .eq("id", botId)
+          .single();
+        if (error) throw error;
+        if (!data) throw new Error("Bot not found");
+        setBot(data as Bot);
       } catch (e: any) {
         setError(e.message || "Failed to load bot");
       } finally {
