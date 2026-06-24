@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Eye, Monitor } from "lucide-react";
 
 interface Bot {
   id: string;
@@ -18,19 +19,17 @@ export function PreviewTab({ bot }: { bot: Bot }) {
 
   useEffect(() => {
     const body = document.body;
-    // Clear any existing widget UI
     const existingFab = document.getElementById("chatai-fab");
     const existingWin = document.getElementById("chatai-window");
     if (existingFab) existingFab.remove();
     if (existingWin) existingWin.remove();
-    // Reset the widget load flag so the script re-runs (supports React remounts).
+    
     const winAny = window as any;
     const flagKeys = Object.keys(winAny).filter((k: string) =>
       k.startsWith("__ChatAIWidgetLoaded_")
     );
     flagKeys.forEach((k) => delete winAny[k]);
 
-    // Inject widget.js with query params using a cache-buster so fresh script runs.
     const cacheBuster = Date.now() + "_" + Math.random().toString(36).slice(2, 7);
     const src = `/widget.js?botId=${encodeURIComponent(bot.id)}&apiKey=${encodeURIComponent(
       bot.api_key || ""
@@ -50,23 +49,66 @@ export function PreviewTab({ bot }: { bot: Bot }) {
   }, [bot.id, bot.api_key]);
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="font-semibold text-lg">Preview your widget</h2>
-      <p className="text-slate-500 text-sm mt-1">
-        This is how your widget will appear on your website. Click the floating button to open it.
-      </p>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="font-semibold text-lg tracking-tight">Widget Preview</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            See how your chat widget will look on your website
+          </p>
+        </div>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Monitor className="w-4 h-4" />
+          <span>Live preview</span>
+        </div>
+      </div>
+      
       <div
         ref={containerRef}
-        className="mt-5 rounded-xl bg-gradient-to-b from-slate-100 to-slate-200 min-h-[480px] relative overflow-hidden"
+        className="rounded-2xl border border-border/60 bg-gradient-to-b from-muted/50 to-muted min-h-[480px] relative overflow-hidden"
       >
-        <div className="absolute inset-x-0 top-0 p-4 text-sm text-slate-600">
-          {loaded ? (
-            <span className="inline-flex items-center gap-2 text-emerald-700">
-              ● Widget loaded — click the floating button in the bottom-right corner.
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-2 text-slate-500">Loading widget…</span>
-          )}
+        <div className="absolute inset-x-0 top-0 p-4">
+          <div className="inline-flex items-center gap-2 text-xs px-3 py-1.5 rounded-full bg-card border border-border/60 shadow-sm">
+            {loaded ? (
+              <>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-emerald-700 font-medium">Widget active</span>
+              </>
+            ) : (
+              <>
+                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                <span className="text-amber-700">Loading...</span>
+              </>
+            )}
+          </div>
+        </div>
+
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="text-center opacity-30">
+            <Eye className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">Your website content</p>
+            <p className="text-xs text-muted-foreground/60 mt-1">
+              Click the floating button below to test
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-border/60 bg-card p-4">
+        <div className="flex items-start gap-3">
+          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+            <span className="text-primary text-sm">💡</span>
+          </div>
+          <div>
+            <h3 className="text-sm font-medium">Widget Position</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Your widget is configured to appear at the{" "}
+              <span className="font-medium text-foreground">
+                {bot.position === "bottom-right" ? "bottom right" : "bottom left"}
+              </span>{" "}
+              corner of your website.
+            </p>
+          </div>
         </div>
       </div>
     </div>

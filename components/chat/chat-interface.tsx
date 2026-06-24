@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Send, Bot, User, Loader2 } from "lucide-react";
+import { Send, Bot, User, Loader2, MessageCircle, Sparkles } from "lucide-react";
 import {
   searchKnowledge,
   getBotSettings,
@@ -146,77 +146,85 @@ export function ChatInterface({ botId, initialConversationId, mode = "full" }: C
     }
   }
 
-  const primaryColor = botSettings?.primary_color || "#6366f1";
+  const primaryColor = botSettings?.primary_color || "#8b5cf6";
 
   if (mode === "widget") {
     return (
-      <div className="flex flex-col h-full bg-white rounded-lg shadow-xl overflow-hidden">
+      <div className="flex flex-col h-full bg-background rounded-2xl shadow-xl border border-border/60 overflow-hidden">
         <div
-          className="px-4 py-3 text-white flex items-center gap-3"
-          style={{ background: primaryColor }}
+          className="px-4 py-3.5 text-white flex items-center gap-3"
+          style={{ background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}dd)` }}
         >
-          <div className="h-9 w-9 rounded-full bg-white/20 flex items-center justify-center">
+          <div className="h-9 w-9 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center shadow-sm">
             <Bot className="h-5 w-5" />
           </div>
           <div>
             <div className="font-semibold text-sm">{botSettings?.name || "AI Assistant"}</div>
-            <div className="text-xs text-white/80">在线</div>
+            <div className="text-xs text-white/80 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              在线
+            </div>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-slate-50">
-          {messages.map((m) => (
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/30">
+          {messages.map((m, index) => (
             <div
               key={m.id}
-              className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
+              className={`flex items-end gap-2 ${m.role === "user" ? "justify-end" : "justify-start"} animate-fade-up`}
+              style={{ animationDelay: `${index * 30}ms` }}
             >
               {m.role === "assistant" && (
                 <div
-                  className="h-7 w-7 rounded-full flex items-center justify-center mr-2 shrink-0 text-white"
+                  className="h-8 w-8 rounded-xl flex items-center justify-center mr-2 shrink-0 text-white shadow-sm"
                   style={{ background: primaryColor }}
                 >
                   <Bot className="h-4 w-4" />
                 </div>
               )}
               <div
-                className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm ${
+                className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${
                   m.role === "user"
                     ? "text-white rounded-br-md"
-                    : "bg-white text-slate-800 rounded-bl-md shadow-sm border border-slate-100"
+                    : "bg-card text-foreground rounded-bl-md shadow-sm border border-border/60"
                 }`}
                 style={m.role === "user" ? { background: primaryColor } : {}}
               >
-                <div className="whitespace-pre-wrap break-words">{m.content}</div>
+                <div className="whitespace-pre-wrap break-words leading-relaxed">{m.content}</div>
               </div>
               {m.role === "user" && (
-                <div className="h-7 w-7 rounded-full bg-slate-200 flex items-center justify-center ml-2 shrink-0">
-                  <User className="h-4 w-4 text-slate-500" />
+                <div className="h-8 w-8 rounded-xl bg-muted flex items-center justify-center ml-2 shrink-0 border border-border/40">
+                  <User className="h-4 w-4 text-muted-foreground" />
                 </div>
               )}
             </div>
           ))}
           {loading && (
-            <div className="flex justify-start">
+            <div className="flex items-end gap-2 justify-start">
               <div
-                className="h-7 w-7 rounded-full flex items-center justify-center mr-2 shrink-0 text-white"
+                className="h-8 w-8 rounded-xl flex items-center justify-center mr-2 shrink-0 text-white shadow-sm"
                 style={{ background: primaryColor }}
               >
                 <Bot className="h-4 w-4" />
               </div>
-              <div className="bg-white rounded-2xl rounded-bl-md px-3 py-2 shadow-sm border border-slate-100">
-                <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
+              <div className="bg-card rounded-2xl rounded-bl-md px-4 py-3 shadow-sm border border-border/60">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "150ms" }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "300ms" }} />
+                </div>
               </div>
             </div>
           )}
           {error && (
-            <div className="text-xs text-red-500 text-center bg-red-50 rounded-lg p-2">
+            <div className="text-xs text-red-500 text-center bg-red-50 border border-red-100 rounded-xl p-3">
               {error}
             </div>
           )}
           <div ref={messagesEndRef} />
         </div>
 
-        <form onSubmit={handleSend} className="p-3 border-t border-slate-200 bg-white">
+        <form onSubmit={handleSend} className="p-4 border-t border-border/60 bg-card">
           <div className="flex items-end gap-2">
             <textarea
               ref={inputRef}
@@ -225,12 +233,12 @@ export function ChatInterface({ botId, initialConversationId, mode = "full" }: C
               onKeyDown={handleKeyDown}
               placeholder="输入消息..."
               rows={1}
-              className="flex-1 resize-none rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-indigo-400/50 focus:ring-2 focus:ring-indigo-500/10 max-h-24"
+              className="flex-1 resize-none rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all max-h-24 placeholder:text-muted-foreground/50"
             />
             <button
               type="submit"
               disabled={loading || !input.trim()}
-              className="h-10 w-10 rounded-xl text-white flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90"
+              className="h-11 w-11 rounded-xl text-white flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 active:scale-95 shadow-lg shadow-primary/25"
               style={{ background: primaryColor }}
             >
               <Send className="h-4 w-4" />
@@ -242,68 +250,101 @@ export function ChatInterface({ botId, initialConversationId, mode = "full" }: C
   }
 
   return (
-    <div className="flex flex-col h-[600px] rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-      <div className="px-6 py-4 border-b border-slate-200">
-        <h2 className="text-lg font-semibold">{botSettings?.name || "对话"}</h2>
-        <p className="text-sm text-slate-500">与 AI 助手实时交流</p>
+    <div className="flex flex-col h-[600px] rounded-2xl border border-border/60 bg-card shadow-sm overflow-hidden">
+      <div className="px-6 py-4 border-b border-border/60 bg-gradient-to-r from-primary/5 to-transparent">
+        <div className="flex items-center gap-3">
+          <div
+            className="h-11 w-11 rounded-xl flex items-center justify-center text-white shadow-sm"
+            style={{ background: primaryColor }}
+          >
+            <Bot className="h-5 w-5" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight">{botSettings?.name || "对话"}</h2>
+            <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              AI 助手在线
+            </p>
+          </div>
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50">
-        {messages.map((m) => (
+      <div className="flex-1 overflow-y-auto p-6 space-y-5 bg-muted/20">
+        {messages.length === 0 && (
+          <div className="text-center py-12">
+            <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-violet-500/10 to-fuchsia-500/10 flex items-center justify-center mb-4">
+              <MessageCircle className="w-8 h-8 text-primary" />
+            </div>
+            <h3 className="font-semibold text-lg mb-2">开始对话</h3>
+            <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+              发送消息与 AI 助手交流，我将尽力帮助你解答问题
+            </p>
+          </div>
+        )}
+        
+        {messages.map((m, index) => (
           <div
             key={m.id}
-            className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
+            className={`flex items-end gap-3 ${m.role === "user" ? "justify-end" : "justify-start"} animate-fade-up`}
+            style={{ animationDelay: `${index * 30}ms` }}
           >
             {m.role === "assistant" && (
               <div
-                className="h-9 w-9 rounded-full flex items-center justify-center mr-3 shrink-0 text-white"
+                className="h-10 w-10 rounded-xl flex items-center justify-center mr-2 shrink-0 text-white shadow-sm"
                 style={{ background: primaryColor }}
               >
                 <Bot className="h-5 w-5" />
               </div>
             )}
             <div
-              className={`max-w-[70%] rounded-2xl px-4 py-3 text-sm ${
+              className={`max-w-[75%] rounded-2xl px-5 py-3.5 text-sm ${
                 m.role === "user"
-                  ? "text-white rounded-tr-md"
-                  : "bg-white text-slate-800 rounded-tl-md shadow-sm border border-slate-100"
+                  ? "text-white rounded-br-md"
+                  : "bg-card text-foreground rounded-bl-md shadow-sm border border-border/60"
               }`}
               style={m.role === "user" ? { background: primaryColor } : {}}
             >
-              <div className="whitespace-pre-wrap break-words">{m.content}</div>
-              <div className="text-[10px] opacity-60 mt-2">
-                {new Date(m.created_at).toLocaleTimeString()}
+              <div className="whitespace-pre-wrap break-words leading-relaxed">{m.content}</div>
+              <div className="text-[10px] opacity-50 mt-2 flex items-center gap-1">
+                {m.role === "assistant" && <Sparkles className="w-3 h-3" />}
+                {new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
               </div>
             </div>
             {m.role === "user" && (
-              <div className="h-9 w-9 rounded-full bg-slate-200 flex items-center justify-center ml-3 shrink-0">
-                <User className="h-5 w-5 text-slate-500" />
+              <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center ml-2 shrink-0 border border-border/40">
+                <User className="h-5 w-5 text-muted-foreground" />
               </div>
             )}
           </div>
         ))}
+        
         {loading && (
-          <div className="flex justify-start">
+          <div className="flex items-end gap-3 justify-start animate-fade-up">
             <div
-              className="h-9 w-9 rounded-full flex items-center justify-center mr-3 shrink-0 text-white"
+              className="h-10 w-10 rounded-xl flex items-center justify-center mr-2 shrink-0 text-white shadow-sm"
               style={{ background: primaryColor }}
             >
               <Bot className="h-5 w-5" />
             </div>
-            <div className="bg-white rounded-2xl rounded-tl-md px-4 py-3 shadow-sm border border-slate-100">
-              <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+            <div className="bg-card rounded-2xl rounded-bl-md px-5 py-4 shadow-sm border border-border/60">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "0ms" }} />
+                <span className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "150ms" }} />
+                <span className="w-2 h-2 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "300ms" }} />
+              </div>
             </div>
           </div>
         )}
+        
         {error && (
-          <div className="text-sm text-red-500 text-center bg-red-50 rounded-xl p-3">
+          <div className="text-sm text-red-500 text-center bg-red-50 border border-red-100 rounded-xl p-3">
             {error}
           </div>
         )}
         <div ref={messagesEndRef} />
       </div>
 
-      <form onSubmit={handleSend} className="p-4 border-t border-slate-200 bg-white">
+      <form onSubmit={handleSend} className="p-4 border-t border-border/60 bg-card">
         <div className="flex items-end gap-3">
           <textarea
             ref={inputRef}
@@ -312,12 +353,12 @@ export function ChatInterface({ botId, initialConversationId, mode = "full" }: C
             onKeyDown={handleKeyDown}
             placeholder="输入你的消息... (Enter 发送，Shift+Enter 换行)"
             rows={2}
-            className="flex-1 resize-none rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-indigo-400/50 focus:ring-2 focus:ring-indigo-500/10 max-h-32"
+            className="flex-1 resize-none rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all max-h-32 placeholder:text-muted-foreground/50"
           />
           <button
             type="submit"
             disabled={loading || !input.trim()}
-            className="h-12 px-6 rounded-xl text-white font-medium flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90"
+            className="h-12 px-6 rounded-xl text-white font-medium flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 active:scale-[0.98] shadow-lg shadow-primary/20"
             style={{ background: primaryColor }}
           >
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
