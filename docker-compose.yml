@@ -1,46 +1,21 @@
-# ============================================================
-# ChatAI Pro — Self-host Docker Compose
-# ============================================================
-# 使用：
-#   1. cp .env.local.example .env.local  # 填入真实值
-#   2. docker compose up -d --build
-# ============================================================
-
+version: '3.8'
 services:
   chatai-pro:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: .
     container_name: chatai-pro
-    restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-      # === Supabase ===
       - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
       - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
       - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
-      # === DeepSeek AI ===
       - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
       - DEEPSEEK_CHAT_MODEL=${DEEPSEEK_CHAT_MODEL:-deepseek-chat}
-      # === App URL ===
       - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
-      # === Stripe (optional) ===
-      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
-      - NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:-}
-      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
+    restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/"]
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/"]
       interval: 30s
-      timeout: 5s
+      timeout: 10s
       retries: 3
-      start_period: 15s
-    mem_limit: 512m
-    memswap_limit: 1g
-    cpus: "1.0"
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"

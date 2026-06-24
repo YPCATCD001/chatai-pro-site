@@ -1,10 +1,11 @@
 import "./globals.css";
 import type { Metadata } from "next";
-import { siteConfig } from "@/lib/site";
+import { I18nProvider } from "@/lib/i18n/i18n-provider";
 
 export const metadata: Metadata = {
-  title: `${siteConfig.name} — AI Customer Service SaaS`,
-  description: siteConfig.description,
+  title: "ChatAI Pro — AI Customer Service SaaS",
+  description:
+    "AI customer service trained on your documents, deployed on your website in minutes.",
 };
 
 export default function RootLayout({
@@ -13,9 +14,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className="min-h-screen bg-gradient-to-b from-white to-slate-50 text-slate-900 antialiased">
-        {children}
+    <html lang="zh" dir="ltr" suppressHydrationWarning>
+      <head>
+        <meta charSet="utf-8" />
+      </head>
+      <body className="min-h-screen bg-slate-950 text-white antialiased">
+        <I18nProvider>{children}</I18nProvider>
       </body>
     </html>
   );

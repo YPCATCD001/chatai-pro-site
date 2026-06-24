@@ -1,35 +1,18 @@
 /** @type {import('next').NextConfig} */
+const isGithubPages = process.env.GITHUB_PAGES === "true";
+const repoName = process.env.GITHUB_REPO_NAME || "";
+
 const nextConfig = {
   reactStrictMode: true,
-  output: "standalone",
-  experimental: {
-    serverActions: {
-      allowedOrigins: [
-        "localhost:*",
-        "*.vercel.app",
-        "*"
-      ],
-    },
+  output: "export",
+  images: {
+    unoptimized: true,
   },
-  async headers() {
-    return [
-      {
-        source: "/api/chat/:path*",
-        headers: [
-          { key: "Access-Control-Allow-Origin", value: "*" },
-          { key: "Access-Control-Allow-Methods", value: "GET,OPTIONS,POST" },
-          { key: "Access-Control-Allow-Headers", value: "Content-Type,Authorization,x-bot-id" },
-        ],
-      },
-      {
-        source: "/widget.js",
-        headers: [
-          { key: "Access-Control-Allow-Origin", value: "*" },
-          { key: "Content-Type", value: "application/javascript" },
-          { key: "Cache-Control", value: "public, max-age=3600" },
-        ],
-      },
-    ];
+  trailingSlash: true,
+  basePath: isGithubPages && repoName ? `/${repoName}` : undefined,
+  assetPrefix: isGithubPages && repoName ? `/${repoName}/` : undefined,
+  turbopack: {
+    root: __dirname,
   },
 };
 

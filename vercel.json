@@ -1,26 +1,24 @@
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "buildCommand": "next build",
-  "devCommand": "next dev",
   "installCommand": "npm install",
-  "regions": ["hnd1"],
+  "outputDirectory": ".next",
+  "regions": ["iad1", "fra1"],
   "headers": [
     {
       "source": "/api/(.*)",
       "headers": [
         { "key": "Access-Control-Allow-Origin", "value": "*" },
-        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, PUT, DELETE, OPTIONS" },
-        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, x-api-key, Authorization" }
+        { "key": "Access-Control-Allow-Methods", "value": "GET,OPTIONS,PATCH,DELETE,POST,PUT" },
+        { "key": "Access-Control-Allow-Headers", "value": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization, x-api-key" }
       ]
     },
     {
       "source": "/widget.js",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=60, must-revalidate" },
-        { "key": "Content-Type", "value": "application/javascript; charset=utf-8" }
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Cache-Control", "value": "public, max-age=3600" }
       ]
     }
-  ],
-  "cleanUrls": true
+  ]
 }
