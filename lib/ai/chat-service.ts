@@ -1,0 +1,157 @@
+"use client";
+
+import { createClient } from "@/lib/supabase/client";
+
+interface ChatMessage {
+  role: "user" | "assistant" | "system";
+  content: string;
+}
+
+const DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions";
+
+export async function searchKnowledge(botId: string, query: string): Promise<string[]> {
+  try {
+    const supabase = createClient() as any;
+    const keywords = query.split(/\s+/).filter((k) => k.length > 1);
+    
+    let queryBuilder = supabase
+      .from("embeddings")
+      .select("content")
+      .eq("bot_id", botId)
+      .limit(5);
+
+    if (keywords.length > 0) {
+      const searchTerm = keywords.join(" | ");
+      queryBuilder = queryBuilder.textSearch("content", searchTerm, {
+        type: "websearch",
+      });
+    }
+
+    const { data, error } = await queryBuilder;
+    
+    if (error) {
+      console.warn("Knowledge search failed:", error);
+      return [];
+    }
+
+    return (data || []).map((item: any) => item.content).filter(Boolean);
+  } catch (e) {
+    console.warn("Knowledge search error:", e);
+    return [];
+  }
+}
+
+export async function getBotSettings(botId: string) {
+  try {
+    const supabase = createClient() as any;
+    const { data, error } = await supabase
+      .from("bots")
+      .select("name, welcome_message, primary_color, api_key")
+      .eq("id", botId)
+      .single();
+    
+    if (error) throw error;
+    return data;
+  } catch (e) {
+    console.warn("Failed to get bot settings:", e);
+    return null;
+  }
+}
+
+export async function sendToDeepSeek(
+  messages: ChatMessage[],
+  apiKey: string,
+  systemPrompt?: string
+): Promise<string> {
+  const finalMessages: ChatMessage[] = [];
+  
+  if (systemPrompt) {
+    finalMessages.push({ role: "system", content: systemPrompt });
+  }
+  
+  finalMessages.push(...messages);
+
+  const response = await fetch(DEEPSEEK_API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: "deepseek-chat",
+      messages: finalMessages,
+      temperature: 0.7,
+      max_tokens: 1024,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`DeepSeek API error: ${response.status} - ${errorText}`);
+  }
+
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content || "抱歉，我暂时无法回答这个问题。";
+}
+
+export async function saveMessage(
+  conversationId: string,
+  role: "user" | "assistant",
+  content: string
+) {
+  try {
+    const supabase = createClient() as any;
+    const { data, error } = await supabase
+      .from("messages")
+      .insert({
+        conversation_id: conversationId,
+        role,
+        content,
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  } catch (e) {
+    console.warn("Failed to save message:", e);
+    return null;
+  }
+}
+
+export async function createConversation(botId: string): Promise<string | null> {
+  try {
+    const supabase = createClient() as any;
+    const visitorId = "visitor_" + Math.random().toString(36).substring(2, 10);
+    
+    const { data, error } = await supabase
+      .from("conversations")
+      .insert({
+        bot_id: botId,
+        visitor_id: visitorId,
+        status: "active",
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data.id;
+  } catch (e) {
+    console.warn("Failed to create conversation:", e);
+    return null;
+  }
+}
+
+export function buildSystemPrompt(botName: string, knowledge: string[]): string {
+  let prompt = `你是 ${botName}，一个专业的 AI 客服助手。`;
+  prompt += `\n\n请用友好、专业的语气回答用户的问题。`;
+  prompt += `\n回答要简洁明了，重点突出。`;
+  
+  if (knowledge.length > 0) {
+    prompt += `\n\n以下是参考知识库内容，请基于这些信息回答用户的问题：\n`;
+    prompt += knowledge.map((k, i) => `[${i + 1}] ${k}`).join("\n");
+    prompt += `\n\n如果参考资料中没有相关信息，请礼貌地告诉用户你无法回答该问题。`;
+  }
+  
+  return prompt;
+}

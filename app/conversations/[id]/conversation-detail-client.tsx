@@ -1,43 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
-
-interface Message {
-  id: string;
-  role: "user" | "assistant" | "system";
-  content: string;
-  created_at: string;
-}
+import { ChatInterface } from "@/components/chat/chat-interface";
 
 export function ConversationDetailClient({ id }: { id: string }) {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const { data, error } = await (createClient() as any)
-          .from("messages")
-          .select("*")
-          .eq("conversation_id", id)
-          .order("created_at", { ascending: true });
-        if (error) throw error;
-        if (Array.isArray(data) && !cancelled) setMessages(data as Message[]);
-      } catch {
-        // silent
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [id]);
-
   return (
     <div>
       <div className="mb-4">
@@ -50,44 +17,11 @@ export function ConversationDetailClient({ id }: { id: string }) {
       </div>
       <h1 className="text-2xl md:text-3xl font-bold mb-1">Conversation</h1>
       <p className="text-slate-500 text-sm mb-6">
-        The full transcript with this visitor.
+        与访客的完整对话记录
       </p>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        {loading ? (
-          <div className="text-sm text-slate-500">Loading…</div>
-        ) : messages.length === 0 ? (
-          <div className="text-sm text-slate-500 text-center py-10">
-            No messages yet.
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {messages.map((m) => (
-              <div
-                key={m.id}
-                className={
-                  "flex " +
-                  (m.role === "user" ? "justify-end" : "justify-start")
-                }
-              >
-                <div
-                  className={
-                    "max-w-[80%] rounded-xl px-4 py-2.5 text-sm " +
-                    (m.role === "user"
-                      ? "bg-indigo-100 text-slate-800 rounded-tr-sm"
-                      : "bg-slate-100 text-slate-800 rounded-tl-sm")
-                  }
-                >
-                  <div className="whitespace-pre-wrap">{m.content}</div>
-                  <div className="text-[10px] text-slate-400 mt-1.5">
-                    {new Date(m.created_at).toLocaleString()} · {m.role}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      <ChatInterface botId="preview" initialConversationId={id} mode="full" />
+      
       <div className="text-[10px] text-slate-400 mt-3 break-all">
         Conversation ID: {id}
       </div>
