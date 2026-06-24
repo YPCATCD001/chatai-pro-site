@@ -13,8 +13,9 @@ export async function searchKnowledge(botId: string, query: string): Promise<str
   try {
     const supabase = createClient() as any;
     const keywords = query.split(/\s+/).filter((k) => k.length > 1);
-    
-    let queryBuilder = supabase
+    const results: string[] = [];
+
+    let embeddingsQuery = supabase
       .from("embeddings")
       .select("content")
       .eq("bot_id", botId)
@@ -22,19 +23,47 @@ export async function searchKnowledge(botId: string, query: string): Promise<str
 
     if (keywords.length > 0) {
       const searchTerm = keywords.join(" | ");
-      queryBuilder = queryBuilder.textSearch("content", searchTerm, {
+      embeddingsQuery = embeddingsQuery.textSearch("content", searchTerm, {
         type: "websearch",
       });
     }
 
-    const { data, error } = await queryBuilder;
+    const { data: embeddingsData, error: embeddingsError } = await embeddingsQuery;
     
-    if (error) {
-      console.warn("Knowledge search failed:", error);
-      return [];
+    if (embeddingsError) {
+      console.warn("Embeddings search failed:", embeddingsError);
+    } else if (embeddingsData) {
+      results.push(...embeddingsData.map((item: any) => item.content).filter(Boolean));
     }
 
-    return (data || []).map((item: any) => item.content).filter(Boolean);
+    let kbQuery = supabase
+      .from("knowledge_base")
+      .select("title, content")
+      .eq("bot_id", botId)
+      .eq("status", "ready")
+      .limit(5);
+
+    if (keywords.length > 0) {
+      const searchTerm = keywords.join(" | ");
+      kbQuery = kbQuery.or(`title.fts.${searchTerm},content.fts.${searchTerm}`);
+    }
+
+    const { data: kbData, error: kbError } = await kbQuery;
+    
+    if (kbError) {
+      console.warn("Knowledge base search failed:", kbError);
+    } else if (kbData) {
+      for (const item of kbData) {
+        const text = item.title && item.content 
+          ? `${item.title}\n${item.content}` 
+          : item.content || item.title;
+        if (text && !results.includes(text)) {
+          results.push(text);
+        }
+      }
+    }
+
+    return results.slice(0, 8);
   } catch (e) {
     console.warn("Knowledge search error:", e);
     return [];
@@ -46,7 +75,7 @@ export async function getBotSettings(botId: string) {
     const supabase = createClient() as any;
     const { data, error } = await supabase
       .from("bots")
-      .select("name, welcome_message, primary_color, api_key")
+      .select("name, welcome_message, primary_color")
       .eq("id", botId)
       .single();
     
@@ -60,7 +89,6 @@ export async function getBotSettings(botId: string) {
 
 export async function sendToDeepSeek(
   messages: ChatMessage[],
-  apiKey: string,
   systemPrompt?: string
 ): Promise<string> {
   const finalMessages: ChatMessage[] = [];
@@ -70,6 +98,11 @@ export async function sendToDeepSeek(
   }
   
   finalMessages.push(...messages);
+
+  const apiKey = process.env.NEXT_PUBLIC_DEEPSEEK_API_KEY || process.env.DEEPSEEK_API_KEY || "";
+  if (!apiKey) {
+    throw new Error("DEEPSEEK_API_KEY is not configured");
+  }
 
   const response = await fetch(DEEPSEEK_API_URL, {
     method: "POST",

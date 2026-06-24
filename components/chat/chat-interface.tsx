@@ -120,13 +120,7 @@ export function ChatInterface({ botId, initialConversationId, mode = "full" }: C
         knowledge
       );
 
-      const apiKey = botSettings?.api_key || process.env.NEXT_PUBLIC_DEEPSEEK_API_KEY || "";
-      
-      if (!apiKey) {
-        throw new Error("AI 服务未配置");
-      }
-
-      const aiResponse = await sendToDeepSeek(history, apiKey, systemPrompt);
+      const aiResponse = await sendToDeepSeek(history, systemPrompt);
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),

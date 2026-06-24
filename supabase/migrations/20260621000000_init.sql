@@ -221,9 +221,15 @@ create policy "embeddings_owner" on embeddings for all using (
 drop policy if exists "bots_anon_read" on bots;
 create policy "bots_anon_read" on bots for select using (true);
 
+-- Column-level security: revoke access to sensitive columns for anon role
+revoke select (api_key) on bots from anon;
+
 -- users: allow anon to read subscription tier info (for message quota)
 drop policy if exists "users_anon_read" on users;
 create policy "users_anon_read" on users for select using (true);
+
+-- Column-level security: revoke access to sensitive user columns for anon role
+revoke select (stripe_customer_id, stripe_subscription_id, email) on users from anon;
 
 -- users: allow anon to update monthly_message_count (for quota tracking)
 drop policy if exists "users_anon_update" on users;
