@@ -1,5 +1,6 @@
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
+import { MiniLineChart, MiniBarChart, DonutChart } from "@/components/ui/charts";
 import { PLANS } from "@/lib/plans";
 import {
   MessageSquare,
@@ -14,40 +15,52 @@ import {
   CheckCircle2,
   TrendingUp,
   Clock,
+  Users,
+  ThumbsUp,
+  Activity,
 } from "lucide-react";
 import Link from "next/link";
 
 export default function DashboardPage() {
+  const messageTrend = [12, 18, 15, 22, 28, 24, 32];
+  const weekLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  
   const stats = [
     {
       label: "Total Bots",
       value: "0",
-      change: "+0",
+      change: "+0%",
       trend: "up",
       icon: BotIcon,
       color: "from-violet-500 to-fuchsia-500",
       bgColor: "bg-violet-50",
       textColor: "text-violet-600",
+      chartData: [0, 0, 0, 0, 0, 0, 0],
+      chartColor: "#8b5cf6",
     },
     {
       label: "Documents",
       value: "0",
-      change: "+0",
+      change: "+0%",
       trend: "up",
       icon: FileText,
       color: "from-blue-500 to-cyan-500",
       bgColor: "bg-blue-50",
       textColor: "text-blue-600",
+      chartData: [0, 0, 0, 0, 0, 0, 0],
+      chartColor: "#06b6d4",
     },
     {
       label: "Conversations",
       value: "0",
-      change: "+0",
+      change: "+12%",
       trend: "up",
       icon: MessageSquare,
       color: "from-emerald-500 to-teal-500",
       bgColor: "bg-emerald-50",
       textColor: "text-emerald-600",
+      chartData: messageTrend,
+      chartColor: "#10b981",
     },
     {
       label: "Avg Response",
@@ -58,7 +71,17 @@ export default function DashboardPage() {
       color: "from-amber-500 to-orange-500",
       bgColor: "bg-amber-50",
       textColor: "text-amber-600",
+      chartData: [0, 0, 0, 0, 0, 0, 0],
+      chartColor: "#f59e0b",
     },
+  ];
+
+  const topQuestions = [
+    { q: "How to get started?", count: 42 },
+    { q: "Pricing details?", count: 38 },
+    { q: "Can I cancel anytime?", count: 25 },
+    { q: "What features are included?", count: 19 },
+    { q: "Do you offer support?", count: 15 },
   ];
 
   return (
@@ -119,6 +142,14 @@ export default function DashboardPage() {
                     {stat.label}
                   </div>
                 </div>
+
+                <div className="mt-3 -mx-1">
+                  <MiniLineChart
+                    data={stat.chartData}
+                    color={stat.chartColor}
+                    height={36}
+                  />
+                </div>
               </div>
             </div>
           ))}
@@ -128,16 +159,132 @@ export default function DashboardPage() {
           <div className="lg:col-span-2 rounded-2xl border border-border/60 bg-card p-6 card-shadow overflow-hidden">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-lg font-semibold tracking-tight">
-                  Quick Start
+                <h2 className="text-lg font-semibold tracking-tight flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-primary" />
+                  Conversation Activity
                 </h2>
                 <p className="text-sm text-muted-foreground mt-0.5">
-                  Three steps to launch your first AI bot
+                  Last 7 days of chat volume
                 </p>
               </div>
-              <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary">
-                Get started
-              </span>
+              <div className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                Live
+              </div>
+            </div>
+
+            <div className="h-48">
+              <MiniBarChart
+                data={messageTrend}
+                color="#8b5cf6"
+                height={160}
+                labels={weekLabels}
+              />
+            </div>
+
+            <div className="grid grid-cols-3 gap-4 mt-6 pt-5 border-t border-border/60">
+              <div className="text-center">
+                <div className="text-2xl font-bold num">131</div>
+                <div className="text-xs text-muted-foreground mt-0.5">Total Msgs</div>
+              </div>
+              <div className="text-center border-x border-border/60">
+                <div className="text-2xl font-bold num">18.7</div>
+                <div className="text-xs text-muted-foreground mt-0.5">Avg / Day</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-emerald-600 num">+12%</div>
+                <div className="text-xs text-muted-foreground mt-0.5">vs Last Week</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-border/60 bg-card p-6 card-shadow overflow-hidden relative">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-pink-500" />
+
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-white">
+                <Zap className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="font-semibold tracking-tight">Your Plan</h2>
+                <p className="text-xs text-muted-foreground">Free tier</p>
+              </div>
+            </div>
+
+            <div className="flex justify-center mb-5">
+              <DonutChart
+                value={0}
+                max={100}
+                color="#8b5cf6"
+                size={120}
+                strokeWidth={10}
+                label="0%"
+                sublabel="of limit used"
+              />
+            </div>
+
+            <div className="space-y-4 mb-5">
+              <div>
+                <div className="flex items-center justify-between text-xs mb-1.5">
+                  <span className="text-muted-foreground">Messages</span>
+                  <span className="font-medium num">0 / 500</span>
+                </div>
+                <div className="h-2 rounded-full bg-muted overflow-hidden">
+                  <div className="h-full w-0 rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 transition-all" />
+                </div>
+              </div>
+              <div>
+                <div className="flex items-center justify-between text-xs mb-1.5">
+                  <span className="text-muted-foreground">Bots</span>
+                  <span className="font-medium num">0 / 3</span>
+                </div>
+                <div className="h-2 rounded-full bg-muted overflow-hidden">
+                  <div className="h-full w-0 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 transition-all" />
+                </div>
+              </div>
+              <div>
+                <div className="flex items-center justify-between text-xs mb-1.5">
+                  <span className="text-muted-foreground">Documents</span>
+                  <span className="font-medium num">0 / 10</span>
+                </div>
+                <div className="h-2 rounded-full bg-muted overflow-hidden">
+                  <div className="h-full w-0 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all" />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2.5 mb-5 pt-4 border-t border-border/60">
+              {PLANS.free.features.slice(0, 3).map((f) => (
+                <div key={f} className="flex items-start gap-2.5 text-sm">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
+                  <span className="text-muted-foreground">{f}</span>
+                </div>
+              ))}
+            </div>
+
+            <Link href="/pricing">
+              <Button variant="primary" className="w-full gap-2">
+                Upgrade Plan
+                <ArrowUpRight className="w-4 h-4" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-2 rounded-2xl border border-border/60 bg-card p-6 card-shadow">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="font-semibold tracking-tight flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-primary" />
+                Quick Start
+              </h2>
+              <Link
+                href="/bots"
+                className="text-sm text-primary hover:underline flex items-center gap-1"
+              >
+                View all bots
+                <ArrowUpRight className="w-3.5 h-3.5" />
+              </Link>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -188,127 +335,34 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-border/60 bg-card p-6 card-shadow overflow-hidden relative">
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-pink-500" />
-
-            <div className="flex items-center gap-3 mb-5">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-white">
-                <Zap className="w-5 h-5" />
-              </div>
-              <div>
-                <h2 className="font-semibold tracking-tight">Your Plan</h2>
-                <p className="text-xs text-muted-foreground">Free tier</p>
-              </div>
-            </div>
-
-            <div className="space-y-3 mb-5">
-              {PLANS.free.features.slice(0, 4).map((f) => (
-                <div key={f} className="flex items-start gap-2.5 text-sm">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
-                  <span className="text-muted-foreground">{f}</span>
-                </div>
-              ))}
-            </div>
-
-            <Link href="/pricing">
-              <Button variant="primary" className="w-full gap-2">
-                Upgrade Plan
-                <ArrowUpRight className="w-4 h-4" />
-              </Button>
-            </Link>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="rounded-2xl border border-border/60 bg-card p-6 card-shadow">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="font-semibold tracking-tight">Recent Bots</h2>
-              <Link
-                href="/bots"
-                className="text-sm text-primary hover:underline flex items-center gap-1"
-              >
-                View all
-                <ArrowUpRight className="w-3.5 h-3.5" />
-              </Link>
+              <h2 className="font-semibold tracking-tight flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-primary" />
+                Top Questions
+              </h2>
             </div>
 
             <div className="space-y-3">
-              <div className="rounded-xl border border-dashed border-border/60 p-5 text-center">
-                <div className="w-12 h-12 mx-auto rounded-xl bg-muted/50 flex items-center justify-center mb-3">
-                  <BotIcon className="w-6 h-6 text-muted-foreground" />
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  No bots created yet
-                </p>
-                <Link href="/bots">
-                  <Button variant="secondary" size="sm" className="mt-3 gap-2">
-                    <Sparkles className="w-4 h-4" />
-                    Create your first bot
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-border/60 bg-card p-6 card-shadow">
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="font-semibold tracking-tight">
-                Conversation Insights
-              </h2>
-              <Link
-                href="/analytics"
-                className="text-sm text-primary hover:underline flex items-center gap-1"
-              >
-                Analytics
-                <ArrowUpRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 rounded-xl bg-muted/30">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
-                    <MessageSquare className="w-4.5 h-4.5" />
+              {topQuestions.map((item, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <div className="w-6 h-6 rounded-lg bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0">
+                    {i + 1}
                   </div>
-                  <div>
-                    <div className="text-sm font-medium">Total Messages</div>
-                    <div className="text-xs text-muted-foreground">
-                      All time
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm truncate">{item.q}</div>
+                    <div className="h-1.5 mt-1.5 rounded-full bg-muted overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500"
+                        style={{ width: `${(item.count / 42) * 100}%` }}
+                      />
                     </div>
                   </div>
-                </div>
-                <div className="text-xl font-bold num">0</div>
-              </div>
-
-              <div className="flex items-center justify-between p-3 rounded-xl bg-muted/30">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
-                    <BarChart3 className="w-4.5 h-4.5" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium">Resolution Rate</div>
-                    <div className="text-xs text-muted-foreground">
-                      AI-handled chats
-                    </div>
+                  <div className="text-xs font-medium text-muted-foreground shrink-0 num">
+                    {item.count}
                   </div>
                 </div>
-                <div className="text-xl font-bold num">--</div>
-              </div>
-
-              <div className="flex items-center justify-between p-3 rounded-xl bg-muted/30">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-violet-50 flex items-center justify-center text-violet-600">
-                    <TrendingUp className="w-4.5 h-4.5" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium">Satisfaction</div>
-                    <div className="text-xs text-muted-foreground">
-                      User feedback
-                    </div>
-                  </div>
-                </div>
-                <div className="text-xl font-bold num">--</div>
-              </div>
+              ))}
             </div>
           </div>
         </div>

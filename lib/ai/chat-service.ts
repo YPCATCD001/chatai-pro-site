@@ -9,6 +9,15 @@ interface ChatMessage {
 
 const DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions";
 
+export const AI_MODELS = [
+  { id: "deepseek-chat", name: "DeepSeek Chat", provider: "DeepSeek", description: "平衡型，适合日常对话" },
+  { id: "deepseek-reasoner", name: "DeepSeek Reasoner", provider: "DeepSeek", description: "强推理，适合复杂问题" },
+];
+
+function getApiUrl(modelId: string): string {
+  return DEEPSEEK_API_URL;
+}
+
 export async function searchKnowledge(botId: string, query: string): Promise<string[]> {
   try {
     const supabase = createClient() as any;
@@ -75,7 +84,7 @@ export async function getBotSettings(botId: string) {
     const supabase = createClient() as any;
     const { data, error } = await supabase
       .from("bots")
-      .select("name, welcome_message, primary_color")
+      .select("name, welcome_message, primary_color, model")
       .eq("id", botId)
       .single();
     
@@ -89,7 +98,8 @@ export async function getBotSettings(botId: string) {
 
 export async function sendToDeepSeek(
   messages: ChatMessage[],
-  systemPrompt?: string
+  systemPrompt?: string,
+  model: string = "deepseek-chat"
 ): Promise<string> {
   const finalMessages: ChatMessage[] = [];
   
@@ -104,14 +114,14 @@ export async function sendToDeepSeek(
     throw new Error("DEEPSEEK_API_KEY is not configured");
   }
 
-  const response = await fetch(DEEPSEEK_API_URL, {
+  const response = await fetch(getApiUrl(model), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "Authorization": `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: "deepseek-chat",
+      model,
       messages: finalMessages,
       temperature: 0.7,
       max_tokens: 1024,
@@ -125,6 +135,104 @@ export async function sendToDeepSeek(
 
   const data = await response.json();
   return data.choices?.[0]?.message?.content || "抱歉，我暂时无法回答这个问题。";
+}
+
+export async function sendToDeepSeekStream(
+  messages: ChatMessage[],
+  systemPrompt: string | undefined,
+  onChunk: (text: string) => void,
+  model: string = "deepseek-chat"
+): Promise<string> {
+  const finalMessages: ChatMessage[] = [];
+  
+  if (systemPrompt) {
+    finalMessages.push({ role: "system", content: systemPrompt });
+  }
+  
+  finalMessages.push(...messages);
+
+  const apiKey = process.env.NEXT_PUBLIC_DEEPSEEK_API_KEY || process.env.DEEPSEEK_API_KEY || "";
+  if (!apiKey) {
+    throw new Error("DEEPSEEK_API_KEY is not configured");
+  }
+
+  const response = await fetch(getApiUrl(model), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      messages: finalMessages,
+      temperature: 0.7,
+      max_tokens: 1024,
+      stream: true,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`DeepSeek API error: ${response.status} - ${errorText}`);
+  }
+
+  const reader = response.body?.getReader();
+  if (!reader) {
+    throw new Error("Stream reader not available");
+  }
+
+  const decoder = new TextDecoder();
+  let fullText = "";
+  let buffer = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() || "";
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || !trimmed.startsWith("data:")) continue;
+      
+      const dataStr = trimmed.slice(5).trim();
+      if (dataStr === "[DONE]") continue;
+      
+      try {
+        const data = JSON.parse(dataStr);
+        const delta = data.choices?.[0]?.delta?.content;
+        if (delta) {
+          fullText += delta;
+          onChunk(fullText);
+        }
+      } catch (e) {
+        console.warn("Failed to parse stream chunk:", e);
+      }
+    }
+  }
+
+  if (buffer) {
+    const trimmed = buffer.trim();
+    if (trimmed.startsWith("data:")) {
+      const dataStr = trimmed.slice(5).trim();
+      if (dataStr && dataStr !== "[DONE]") {
+        try {
+          const data = JSON.parse(dataStr);
+          const delta = data.choices?.[0]?.delta?.content;
+          if (delta) {
+            fullText += delta;
+            onChunk(fullText);
+          }
+        } catch (e) {
+          console.warn("Failed to parse final buffer chunk:", e);
+        }
+      }
+    }
+  }
+
+  return fullText || "抱歉，我暂时无法回答这个问题。";
 }
 
 export async function saveMessage(

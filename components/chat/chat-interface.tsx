@@ -5,7 +5,7 @@ import { Send, Bot, User, Loader2, MessageCircle, Sparkles } from "lucide-react"
 import {
   searchKnowledge,
   getBotSettings,
-  sendToDeepSeek,
+  sendToDeepSeekStream,
   saveMessage,
   createConversation,
   buildSystemPrompt,
@@ -31,6 +31,7 @@ export function ChatInterface({ botId, initialConversationId, mode = "full" }: C
   const [conversationId, setConversationId] = useState<string | null>(initialConversationId || null);
   const [botSettings, setBotSettings] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [quickReplies, setQuickReplies] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -58,7 +59,29 @@ export function ChatInterface({ botId, initialConversationId, mode = "full" }: C
           created_at: new Date().toISOString(),
         },
       ]);
+      setQuickReplies([
+        "你能帮我做什么？",
+        "如何开始使用？",
+        "你们的产品有什么功能？",
+      ]);
     }
+  }
+
+  function generateQuickReplies(userMessage: string, aiResponse: string): string[] {
+    const lowerMsg = userMessage.toLowerCase();
+    const replies: string[] = [];
+
+    if (lowerMsg.includes("价格") || lowerMsg.includes("多少钱") || lowerMsg.includes("pricing") || lowerMsg.includes("price")) {
+      replies.push("有免费版本吗？", "可以升级套餐吗？", "支持哪些支付方式？");
+    } else if (lowerMsg.includes("功能") || lowerMsg.includes("可以做什么") || lowerMsg.includes("能帮我")) {
+      replies.push("如何创建机器人？", "支持接入知识库吗？", "可以自定义外观吗？");
+    } else if (lowerMsg.includes("使用") || lowerMsg.includes("怎么") || lowerMsg.includes("如何")) {
+      replies.push("还有其他问题", "查看文档", "联系客服");
+    } else {
+      replies.push("了解更多详情", "有什么优惠活动？", "联系人工客服");
+    }
+
+    return replies.slice(0, 3);
   }
 
   async function loadMessages(convId: string) {
@@ -92,7 +115,15 @@ export function ChatInterface({ botId, initialConversationId, mode = "full" }: C
       created_at: new Date().toISOString(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    const assistantId = (Date.now() + 1).toString();
+    const assistantMessage: Message = {
+      id: assistantId,
+      role: "assistant",
+      content: "",
+      created_at: new Date().toISOString(),
+    };
+
+    setMessages((prev) => [...prev, userMessage, assistantMessage]);
     setInput("");
     setLoading(true);
     setError(null);
@@ -120,17 +151,26 @@ export function ChatInterface({ botId, initialConversationId, mode = "full" }: C
         knowledge
       );
 
-      const aiResponse = await sendToDeepSeek(history, systemPrompt);
+      const fullResponse = await sendToDeepSeekStream(
+        history,
+        systemPrompt,
+        (text) => {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantId ? { ...m, content: text } : m
+            )
+          );
+        },
+        botSettings?.model || "deepseek-chat"
+      );
 
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: aiResponse,
-        created_at: new Date().toISOString(),
-      };
-
-      setMessages((prev) => [...prev, assistantMessage]);
-      await saveMessage(convId, "assistant", aiResponse);
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantId ? { ...m, content: fullResponse } : m
+        )
+      );
+      await saveMessage(convId, "assistant", fullResponse);
+      setQuickReplies(generateQuickReplies(userMessage.content, fullResponse));
     } catch (err: any) {
       setError(err.message || "发送失败，请稍后再试");
     } finally {
@@ -190,7 +230,12 @@ export function ChatInterface({ botId, initialConversationId, mode = "full" }: C
                 }`}
                 style={m.role === "user" ? { background: primaryColor } : {}}
               >
-                <div className="whitespace-pre-wrap break-words leading-relaxed">{m.content}</div>
+                <div className="whitespace-pre-wrap break-words leading-relaxed">
+                  {m.content}
+                  {loading && m.role === "assistant" && m.id !== "welcome" && (
+                    <span className="inline-block w-1.5 h-4 bg-current ml-0.5 align-[-2px] animate-pulse rounded-sm opacity-70" />
+                  )}
+                </div>
               </div>
               {m.role === "user" && (
                 <div className="h-8 w-8 rounded-xl bg-muted flex items-center justify-center ml-2 shrink-0 border border-border/40">
@@ -219,6 +264,22 @@ export function ChatInterface({ botId, initialConversationId, mode = "full" }: C
           {error && (
             <div className="text-xs text-red-500 text-center bg-red-50 border border-red-100 rounded-xl p-3">
               {error}
+            </div>
+          )}
+          {quickReplies.length > 0 && !loading && (
+            <div className="flex flex-wrap gap-2 pt-2">
+              {quickReplies.map((reply, index) => (
+                <button
+                  key={index}
+                  onClick={() => {
+                    setInput(reply);
+                    inputRef.current?.focus();
+                  }}
+                  className="text-xs px-3 py-1.5 rounded-full bg-primary/5 text-primary border border-primary/20 hover:bg-primary/10 hover:border-primary/30 transition-all active:scale-95"
+                >
+                  {reply}
+                </button>
+              ))}
             </div>
           )}
           <div ref={messagesEndRef} />
@@ -304,7 +365,12 @@ export function ChatInterface({ botId, initialConversationId, mode = "full" }: C
               }`}
               style={m.role === "user" ? { background: primaryColor } : {}}
             >
-              <div className="whitespace-pre-wrap break-words leading-relaxed">{m.content}</div>
+              <div className="whitespace-pre-wrap break-words leading-relaxed">
+                {m.content}
+                {loading && m.role === "assistant" && m.id !== "welcome" && (
+                  <span className="inline-block w-1.5 h-5 bg-current ml-0.5 align-[-3px] animate-pulse rounded-sm opacity-70" />
+                )}
+              </div>
               <div className="text-[10px] opacity-50 mt-2 flex items-center gap-1">
                 {m.role === "assistant" && <Sparkles className="w-3 h-3" />}
                 {new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
@@ -339,6 +405,22 @@ export function ChatInterface({ botId, initialConversationId, mode = "full" }: C
         {error && (
           <div className="text-sm text-red-500 text-center bg-red-50 border border-red-100 rounded-xl p-3">
             {error}
+          </div>
+        )}
+        {quickReplies.length > 0 && !loading && (
+          <div className="flex flex-wrap gap-2 pt-2">
+            {quickReplies.map((reply, index) => (
+              <button
+                key={index}
+                onClick={() => {
+                  setInput(reply);
+                  inputRef.current?.focus();
+                }}
+                className="text-sm px-4 py-2 rounded-full bg-primary/5 text-primary border border-primary/20 hover:bg-primary/10 hover:border-primary/30 transition-all active:scale-95"
+              >
+                {reply}
+              </button>
+            ))}
           </div>
         )}
         <div ref={messagesEndRef} />
