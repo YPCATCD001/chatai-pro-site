@@ -4,20 +4,42 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import {
+  LayoutDashboard,
+  Bot,
+  MessageSquareText,
+  BarChart3,
+  Settings,
+  CreditCard,
+  LogOut,
+  Sparkles,
+  Menu,
+  X,
+} from "lucide-react";
 
 const NAV = [
-  { href: "/dashboard", label: "Dashboard", match: "/dashboard" },
-  { href: "/bots", label: "Bots", match: "/bots" },
-  { href: "/conversations", label: "Conversations", match: "/conversations" },
-  { href: "/analytics", label: "Analytics", match: "/analytics" },
-  { href: "/pricing", label: "Pricing", match: "/pricing" },
-  { href: "/settings", label: "Settings", match: "/settings" },
+  {
+    group: "Workspace",
+    items: [
+      { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, match: "/dashboard" },
+      { href: "/bots", label: "Bots", icon: Bot, match: "/bots" },
+      { href: "/conversations", label: "Conversations", icon: MessageSquareText, match: "/conversations" },
+      { href: "/analytics", label: "Analytics", icon: BarChart3, match: "/analytics" },
+    ],
+  },
+  {
+    group: "Account",
+    items: [
+      { href: "/pricing", label: "Pricing", icon: CreditCard, match: "/pricing" },
+      { href: "/settings", label: "Settings", icon: Settings, match: "/settings" },
+    ],
+  },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [email, setEmail] = useState<string | null>(null);
-  const [open, setOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
@@ -41,91 +63,105 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isActive = (match: string) =>
     pathname === match || pathname.startsWith(match + "/");
 
-  return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <div className="flex">
-        {/* Sidebar */}
-        <aside className="w-64 border-r border-slate-200 bg-white min-h-screen sticky top-0 hidden md:block">
-          <div className="h-16 px-5 flex items-center border-b border-slate-200">
-            <Link href="/" className="flex items-center gap-2 font-bold">
-              <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-white text-xs shadow-sm">
-                AI
-              </span>
-              <span>ChatAI Pro</span>
-            </Link>
-          </div>
-          <nav className="p-3 space-y-1">
-            {NAV.map((n) => (
-              <Link
-                key={n.href}
-                href={n.href}
-                className={
-                  "block px-3 py-2 text-sm rounded-md " +
-                  (isActive(n.match)
-                    ? "bg-indigo-50 text-indigo-700 font-medium"
-                    : "text-slate-600 hover:bg-slate-100")
-                }
-              >
-                {n.label}
-              </Link>
-            ))}
-          </nav>
-          <div className="absolute bottom-0 left-0 right-0 border-t border-slate-200 p-3 text-sm">
-            <div className="flex items-center justify-between">
-              <div className="truncate text-slate-700">{email}</div>
-              <button
-                onClick={signOut}
-                className="text-slate-500 hover:text-slate-800 text-xs"
-              >
-                Sign out
-              </button>
+  const SidebarContent = () => (
+    <div className="flex flex-col h-full">
+      <div className="h-16 px-4 flex items-center border-b border-border/80">
+        <Link href="/dashboard" className="flex items-center gap-2.5 group">
+          <span className="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white text-sm font-bold shadow-sm shadow-violet-500/20 transition-transform group-hover:scale-105">
+            <Sparkles className="w-4 h-4" />
+          </span>
+          <span className="font-semibold text-[15px] tracking-tight">ChatAI Pro</span>
+        </Link>
+      </div>
+
+      <div className="flex-1 overflow-y-auto py-3 px-2.5 space-y-5">
+        {NAV.map((section) => (
+          <div key={section.group}>
+            <div className="px-2.5 mb-1.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground/70">
+              {section.group}
             </div>
+            <nav className="space-y-0.5">
+              {section.items.map((n) => {
+                const Icon = n.icon;
+                const active = isActive(n.match);
+                return (
+                  <Link
+                    key={n.href}
+                    href={n.href}
+                    onClick={() => setMobileOpen(false)}
+                    className={
+                      "sidebar-item flex items-center gap-2.5 px-2.5 py-2 text-sm rounded-lg transition-all duration-150 " +
+                      (active
+                        ? "active bg-accent text-accent-foreground font-medium"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/60")
+                    }
+                  >
+                    <Icon className="w-4 h-4 shrink-0" strokeWidth={active ? 2.25 : 1.75} />
+                    <span className="truncate">{n.label}</span>
+                  </Link>
+                );
+              })}
+            </nav>
           </div>
+        ))}
+      </div>
+
+      <div className="border-t border-border/80 p-2.5">
+        <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-muted/60 transition-colors">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-400 to-fuchsia-400 flex items-center justify-center text-white text-xs font-semibold shrink-0">
+            {email ? email.charAt(0).toUpperCase() : "U"}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-medium truncate">{email || "User"}</div>
+            <div className="text-xs text-muted-foreground truncate">Free plan</div>
+          </div>
+          <button
+            onClick={signOut}
+            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
+            title="Sign out"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen app-bg text-foreground">
+      <div className="flex min-h-screen">
+        <aside className="w-64 border-r border-border/80 bg-card/60 backdrop-blur-sm sticky top-0 h-screen hidden md:flex flex-col">
+          <SidebarContent />
         </aside>
 
-        {/* Mobile top bar */}
-        <div className="md:hidden fixed top-0 inset-x-0 z-40 bg-white border-b border-slate-200">
+        <div className="md:hidden fixed top-0 inset-x-0 z-50 bg-card/80 backdrop-blur-md border-b border-border/80">
           <div className="h-14 flex items-center justify-between px-4">
-            <Link href="/dashboard" className="flex items-center gap-2 font-bold">
-              <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-white text-xs shadow-sm">
-                AI
+            <Link href="/dashboard" className="flex items-center gap-2">
+              <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white text-xs font-bold">
+                <Sparkles className="w-3.5 h-3.5" />
               </span>
-              ChatAI Pro
+              <span className="font-semibold text-sm">ChatAI Pro</span>
             </Link>
             <button
-              onClick={() => setOpen((v) => !v)}
-              className="text-slate-700 px-3 py-1.5 rounded-md border border-slate-300 text-sm"
+              onClick={() => setMobileOpen((v) => !v)}
+              className="p-2 rounded-lg text-foreground hover:bg-muted/60 transition-colors"
             >
-              Menu
+              {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
-          {open ? (
-            <div className="px-3 py-2 border-t border-slate-200 space-y-1 bg-white">
-              {NAV.map((n) => (
-                <Link
-                  key={n.href}
-                  href={n.href}
-                  onClick={() => setOpen(false)}
-                  className={
-                    "block px-3 py-2 text-sm rounded-md " +
-                    (isActive(n.match) ? "bg-indigo-50 text-indigo-700" : "text-slate-700")
-                  }
-                >
-                  {n.label}
-                </Link>
-              ))}
-              <button
-                onClick={signOut}
-                className="block w-full text-left px-3 py-2 text-sm text-slate-500"
-              >
-                Sign out
-              </button>
+          {mobileOpen && (
+            <div className="border-t border-border/80 bg-card/95 backdrop-blur-md">
+              <div className="p-2.5 max-h-[calc(100vh-3.5rem)] overflow-y-auto">
+                <SidebarContent />
+              </div>
             </div>
-          ) : null}
+          )}
         </div>
 
-        <main className="flex-1 min-w-0 md:pt-0 pt-16">
-          <div className="p-6 md:p-10">{children}</div>
+        <main className="flex-1 min-w-0 md:pt-0 pt-14">
+          <div className="p-6 md:p-8 lg:p-10 max-w-7xl mx-auto animate-fade-in">
+            {children}
+          </div>
         </main>
       </div>
     </div>

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { AppShell } from "@/components/layout/app-shell";
-import { Plus, Trash2, Settings } from "lucide-react";
+import { Plus, Trash2, Settings, Sparkles, MessageCircle, MoreHorizontal } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 interface Bot {
@@ -24,7 +24,7 @@ export default function BotsPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [name, setName] = useState("");
   const [welcome, setWelcome] = useState("");
-  const [primaryColor, setPrimaryColor] = useState("#6366f1");
+  const [primaryColor, setPrimaryColor] = useState("#8b5cf6");
   const [position, setPosition] = useState("bottom-right");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -103,130 +103,172 @@ export default function BotsPage() {
 
   return (
     <AppShell>
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold">Your bots</h1>
-          <p className="text-slate-500 mt-1">Create and manage your AI chat bots.</p>
-        </div>
-        <Button variant="primary" onClick={() => setShowCreate(true)}>
-          <Plus className="h-4 w-4 mr-2" /> New bot
-        </Button>
-      </div>
-
-      {showCreate ? (
-        <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-6 mb-8 max-w-2xl">
-          <h2 className="font-semibold text-lg mb-1">Create a new bot</h2>
-          <p className="text-sm text-slate-500 mb-5">You can edit these settings later.</p>
-          <form onSubmit={createBot} className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Bot name</label>
-              <input
-                className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Acme Support Bot"
-                required
-              />
+      <div className="space-y-6">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+              <span>Manage</span>
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Welcome message</label>
-              <textarea
-                className="min-h-[80px] w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                value={welcome}
-                onChange={(e) => setWelcome(e.target.value)}
-                placeholder="Hi there! How can I help you today?"
-              />
-            </div>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Primary color</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={primaryColor}
-                    onChange={(e) => setPrimaryColor(e.target.value)}
-                    className="h-10 w-14 rounded-md border border-slate-300 cursor-pointer"
-                  />
-                  <input
-                    value={primaryColor}
-                    onChange={(e) => setPrimaryColor(e.target.value)}
-                    className="h-10 flex-1 rounded-md border border-slate-300 px-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Widget position</label>
-                <select
-                  className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white"
-                  value={position}
-                  onChange={(e) => setPosition(e.target.value)}
-                >
-                  <option value="bottom-right">Bottom right</option>
-                  <option value="bottom-left">Bottom left</option>
-                </select>
-              </div>
-            </div>
-            {error ? <div className="text-sm text-red-600">{error}</div> : null}
-            <div className="flex items-center gap-2">
-              <Button type="submit" variant="primary" disabled={saving}>
-                {saving ? "Saving…" : "Create bot"}
-              </Button>
-              <Button variant="outline" type="button" onClick={() => setShowCreate(false)}>
-                Cancel
-              </Button>
-            </div>
-          </form>
-        </div>
-      ) : null}
-
-      {loading ? (
-        <div className="text-sm text-slate-500">Loading your bots…</div>
-      ) : bots.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center">
-          <div className="text-lg font-semibold">No bots yet</div>
-          <div className="text-sm text-slate-500 mt-1">Create your first bot to get started.</div>
-          <Button className="mt-4" variant="primary" onClick={() => setShowCreate(true)}>
-            <Plus className="h-4 w-4 mr-2" /> New bot
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+              Your Bots
+            </h1>
+            <p className="text-muted-foreground mt-1.5 text-[15px]">
+              Create and manage your AI customer service chatbots
+            </p>
+          </div>
+          <Button variant="primary" onClick={() => setShowCreate(true)} className="gap-2">
+            <Plus className="h-4 w-4" /> New Bot
           </Button>
         </div>
-      ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {bots.map((bot) => (
-            <div key={bot.id} className="rounded-xl border border-slate-200 bg-white shadow-sm p-5 flex flex-col">
-              <div className="flex items-center gap-3 mb-3">
-                <div
-                  className="h-10 w-10 rounded-lg text-white font-bold flex items-center justify-center"
-                  style={{ background: bot.primary_color }}
-                >
-                  {bot.name.slice(0, 1).toUpperCase()}
-                </div>
-                <div>
-                  <div className="font-semibold">{bot.name}</div>
-                  <div className="text-xs text-slate-500">{bot.position === "bottom-left" ? "Bottom left" : "Bottom right"}</div>
-                </div>
+
+        {showCreate ? (
+          <div className="rounded-2xl border border-border/60 bg-card card-shadow p-6 max-w-2xl">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-white">
+                <Sparkles className="w-5 h-5" />
               </div>
-              <p className="text-sm text-slate-600 line-clamp-3 flex-1">
-                {bot.welcome_message}
-              </p>
-              <div className="mt-4 flex items-center gap-2">
-                <Link href={`/bots/${bot.id}`}>
-                  <Button size="sm" variant="primary">
-                    <Settings className="h-3.5 w-3.5 mr-2" /> Manage
-                  </Button>
-                </Link>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => deleteBot(bot.id)}
-                  className="text-red-600 hover:bg-red-50 border-red-200"
-                >
-                  <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete
-                </Button>
+              <div>
+                <h2 className="font-semibold text-lg tracking-tight">Create a new bot</h2>
+                <p className="text-sm text-muted-foreground">Set up your AI assistant in under a minute</p>
               </div>
             </div>
-          ))}
-        </div>
-      )}
+            <form onSubmit={createBot} className="space-y-5">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Bot name</label>
+                <input
+                  className="h-11 w-full rounded-lg border border-border bg-background px-3.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g. Acme Support Bot"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Welcome message</label>
+                <textarea
+                  className="min-h-[90px] w-full rounded-lg border border-border bg-background px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none"
+                  value={welcome}
+                  onChange={(e) => setWelcome(e.target.value)}
+                  placeholder="Hi there! How can I help you today?"
+                />
+              </div>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Primary color</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={primaryColor}
+                      onChange={(e) => setPrimaryColor(e.target.value)}
+                      className="h-11 w-14 rounded-lg border border-border cursor-pointer bg-background"
+                    />
+                    <input
+                      value={primaryColor}
+                      onChange={(e) => setPrimaryColor(e.target.value)}
+                      className="h-11 flex-1 rounded-lg border border-border bg-background px-3.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-mono"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Widget position</label>
+                  <select
+                    className="h-11 w-full rounded-lg border border-border bg-background px-3.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                    value={position}
+                    onChange={(e) => setPosition(e.target.value)}
+                  >
+                    <option value="bottom-right">Bottom right</option>
+                    <option value="bottom-left">Bottom left</option>
+                  </select>
+                </div>
+              </div>
+              {error ? <div className="text-sm text-red-500 bg-red-50 px-3 py-2 rounded-lg">{error}</div> : null}
+              <div className="flex items-center gap-2 pt-1">
+                <Button type="submit" variant="primary" disabled={saving} className="gap-2">
+                  {saving ? "Creating..." : "Create bot"}
+                </Button>
+                <Button variant="secondary" type="button" onClick={() => setShowCreate(false)}>
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </div>
+        ) : null}
+
+        {loading ? (
+          <div className="text-sm text-muted-foreground py-12 text-center">Loading your bots...</div>
+        ) : bots.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-border/60 bg-card p-12 text-center card-shadow">
+            <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-violet-500/10 to-fuchsia-500/10 flex items-center justify-center mb-4">
+              <MessageCircle className="w-8 h-8 text-primary" />
+            </div>
+            <div className="text-lg font-semibold tracking-tight">No bots yet</div>
+            <div className="text-sm text-muted-foreground mt-1.5 max-w-sm mx-auto">
+              Create your first AI chatbot to start automating customer conversations.
+            </div>
+            <Button className="mt-5 gap-2" variant="primary" onClick={() => setShowCreate(true)}>
+              <Plus className="h-4 w-4" /> Create your first bot
+            </Button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {bots.map((bot, index) => (
+              <div
+                key={bot.id}
+                className="group relative rounded-2xl border border-border/60 bg-card card-shadow card-shadow-lift overflow-hidden"
+                style={{ animationDelay: `${index * 50}ms` }}
+              >
+                <div
+                  className="h-1.5 w-full"
+                  style={{ background: bot.primary_color }}
+                />
+
+                <div className="p-5">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="h-11 w-11 rounded-xl text-white font-bold flex items-center justify-center text-base shadow-sm"
+                        style={{ background: bot.primary_color }}
+                      >
+                        {bot.name.slice(0, 1).toUpperCase()}
+                      </div>
+                      <div>
+                        <div className="font-semibold text-[15px] tracking-tight">{bot.name}</div>
+                        <div className="text-xs text-muted-foreground flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                          Active
+                        </div>
+                      </div>
+                    </div>
+                    <button className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground">
+                      <MoreHorizontal className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <p className="text-sm text-muted-foreground line-clamp-3 min-h-[60px] leading-relaxed">
+                    {bot.welcome_message}
+                  </p>
+
+                  <div className="mt-4 flex items-center gap-2 pt-4 border-t border-border/40">
+                    <Link href={`/bots/${bot.id}`} className="flex-1">
+                      <Button size="sm" variant="primary" className="w-full gap-1.5">
+                        <Settings className="h-3.5 w-3.5" /> Manage
+                      </Button>
+                    </Link>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => deleteBot(bot.id)}
+                      className="text-red-500 hover:bg-red-50 hover:text-red-600 border-red-200/50"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </AppShell>
   );
 }
